@@ -119,6 +119,7 @@ USAGE:
 OPTIONS:
    -v, --version "0"    node version
    --auto       automatically set the version based on the current node
+   --recursive, -r  recursively delete keys within the path
    
 
 zkctl delete --auto /name

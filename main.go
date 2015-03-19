@@ -132,22 +132,32 @@ var getCommand = cli.Command{
 var deleteCommand = cli.Command{
 	Name:  "delete",
 	Usage: "delete a key",
-	Flags: append(setFlags, cli.BoolFlag{Name: "auto", Usage: "automatically set the version based on the current node"}),
+	Flags: append(setFlags,
+		cli.BoolFlag{Name: "auto", Usage: "automatically set the version based on the current node"},
+		cli.BoolFlag{Name: "recursive,r", Usage: "recursively delete keys within the path"},
+	),
 	Action: func(context *cli.Context) {
 		var (
+			err     error
 			path    = getPath(context)
 			version = int32(context.Int("version"))
 		)
-		// if auto fetch the current value for the node so that we
-		// get the stats and version to use when setting the new value.
-		if context.Bool("auto") {
-			_, s, err := zookeeper.Get(path)
-			if err != nil {
+		if context.Bool("recursive") {
+			if err := deleteRecursive(path); err != nil {
 				logrus.Error(err)
 				zookeeper.Close()
 				os.Exit(1)
 			}
-			version = s.Version
+			return
+		}
+		// if auto fetch the current value for the node so that we
+		// get the stats and version to use when setting the new value.
+		if context.Bool("auto") {
+			if version, err = getVersion(path); err != nil {
+				logrus.Error(err)
+				zookeeper.Close()
+				os.Exit(1)
+			}
 		}
 		if err := zookeeper.Delete(path, version); err != nil {
 			logrus.Error(err)
@@ -155,6 +165,31 @@ var deleteCommand = cli.Command{
 			os.Exit(1)
 		}
 	},
+}
+
+func getVersion(path string) (int32, error) {
+	_, s, err := zookeeper.Get(path)
+	if err != nil {
+		return -1, err
+	}
+	return s.Version, nil
+}
+
+func deleteRecursive(path string) error {
+	keys, _, err := zookeeper.Children(path)
+	if err != nil {
+		return err
+	}
+	for _, k := range keys {
+		if err := deleteRecursive(filepath.Join(path, k)); err != nil {
+			return err
+		}
+	}
+	version, err := getVersion(path)
+	if err != nil {
+		return err
+	}
+	return zookeeper.Delete(path, version)
 }
 
 func main() {
