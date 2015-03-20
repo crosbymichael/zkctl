@@ -167,6 +167,33 @@ var deleteCommand = cli.Command{
 	},
 }
 
+var watchCommand = cli.Command{
+	Name:  "watch",
+	Usage: "watch a key for changes",
+	Flags: []cli.Flag{
+		cli.BoolFlag{Name: "follow,f", Usage: "keep watching forever"},
+	},
+	Action: func(context *cli.Context) {
+	forever:
+		_, _, ev, err := zookeeper.GetW(context.Args().First())
+		if err != nil {
+			logrus.Error(err)
+			zookeeper.Close()
+			os.Exit(1)
+		}
+		for e := range ev {
+			if e.Err != nil {
+				logrus.Warning(err)
+				continue
+			}
+			fmt.Printf("%s: %s\n", e.Type, e.Path)
+		}
+		if context.Bool("follow") {
+			goto forever
+		}
+	},
+}
+
 func getVersion(path string) (int32, error) {
 	_, s, err := zookeeper.Get(path)
 	if err != nil {
@@ -206,10 +233,11 @@ func main() {
 	}
 	app.Commands = []cli.Command{
 		createCommand,
-		setCommand,
+		deleteCommand,
 		getCommand,
 		lsCommand,
-		deleteCommand,
+		setCommand,
+		watchCommand,
 	}
 	app.Before = func(context *cli.Context) error {
 		if context.GlobalBool("debug") {
