@@ -6,7 +6,7 @@ create, list, get, set, and delete nodes within zookeeper.
 
 ```bash
 NAME:
-   zkctl - cli appliction for zookeeper
+   zkctl - cli application for zookeeper
 
 USAGE:
    zkctl [global options] command [command options] [arguments...]
