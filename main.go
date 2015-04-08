@@ -222,7 +222,7 @@ func deleteRecursive(path string) error {
 func main() {
 	app := cli.NewApp()
 	app.Name = "zkctl"
-	app.Usage = "cli appliction for zookeeper"
+	app.Usage = "cli application for zookeeper"
 	app.Version = "1"
 	app.Author = "@crosbymichael"
 	app.Email = "crosbymichael@gmail.com"
